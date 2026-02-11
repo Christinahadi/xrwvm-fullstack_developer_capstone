@@ -8,11 +8,13 @@
 # from django.contrib import messages
 # from datetime import datetime
 
+
 from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 import logging
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
 # from .populate import initiate
 
 
@@ -41,11 +43,54 @@ def login_user(request):
 # Create a `logout_request` view to handle sign out request
 # def logout_request(request):
 # ...
+def logout_user(request):
+    logout(request)  # Terminate user session
+    data = {"userName": ""}  # Return empty username
+    return JsonResponse(data)
+
 
 # Create a `registration` view to handle sign up request
 # @csrf_exempt
 # def registration(request):
 # ...
+
+@csrf_exempt
+def register_user(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid Method"}, status=405)
+
+    data = json.loads(request.body)
+
+    username = data.get("userName", "").strip()
+    password = data.get("password", "")
+    first_name = data.get("firstName", "")
+    last_name = data.get("lastName", "")
+    email = data.get("email", "")
+
+    if not username or not password:
+        return JsonResponse({"error": "Missing Credentials"}, status=400)
+
+    # If username already exists
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({"error": "Already Registered"}, status=200)
+
+    # Create user
+    User.objects.create_user(
+        username=username,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+    )
+
+    # Log them in immediately
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        login(request, user)
+        return JsonResponse({"userName": username, "status": "Authenticated"})
+
+    return JsonResponse({"error": "Registration Failed"}, status=500)
+
 
 # # Update the `get_dealerships` view to render the index page with
 # a list of dealerships
