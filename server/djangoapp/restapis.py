@@ -15,34 +15,33 @@ sentiment_analyzer_url = os.getenv(
 # def get_request(endpoint, **kwargs):
 # Add code for get requests to back end
 def get_request(endpoint, **kwargs):
-    params = ""
-    if(kwargs):
-        for key,value in kwargs.items():
-            params=params+key+"="+value+"&"
+    request_url = backend_url + endpoint
 
-    request_url = backend_url+endpoint+"?"+params
+    if kwargs:
+        params = "&".join([f"{k}={v}" for k, v in kwargs.items()])
+        request_url = f"{request_url}?{params}"
 
-    print("GET from {} ".format(request_url))
+    print(f"GET from {request_url}")
     try:
-        # Call get method of requests library with URL and parameters
         response = requests.get(request_url)
+        response.raise_for_status()
         return response.json()
-    except:
-        # If any error occurs
-        print("Network exception occurred")
+    except Exception as err:
+        print(f"Network exception occurred: {err}")
+        return None
 
 # def analyze_review_sentiments(text):
 # request_url = sentiment_analyzer_url+"analyze/"+text
 # Add code for retrieving sentiments
 def analyze_review_sentiments(text):
-    request_url = sentiment_analyzer_url+"analyze/"+text
+    request_url = sentiment_analyzer_url + "analyze/" + text
     try:
-        # Call get method of requests library with URL and parameters
         response = requests.get(request_url)
         return response.json()
     except Exception as err:
         print(f"Unexpected {err=}, {type(err)=}")
         print("Network exception occurred")
+        return {"sentiment": "neutral"}   # fallback so Django won’t crash
 
 # def post_review(data_dict):
 # Add code for posting review
